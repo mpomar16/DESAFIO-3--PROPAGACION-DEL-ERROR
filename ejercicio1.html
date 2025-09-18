@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ejercicio 1 – Carbono-14</title>
+<link rel="icon" href="data:,">
+
+<!-- MathJax (fórmulas bonitas) -->
+<script>
+window.MathJax = { tex:{ inlineMath:[['\\(','\\)'],['$','$']] }, svg:{ fontCache:'global' } };
+</script>
+<script id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<style>
+  :root{--bg:#0b0b0c;--card:#141416;--text:#f2f2f2;--mut:#a9acb3;--line:#2a2a2e;--brand:#2d6cdf;}
+  body{margin:0;background:#0b0b0c;color:var(--text);font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif}
+  .nav{position:sticky;top:0;background:#0d0f14CC;border-bottom:1px solid var(--line);backdrop-filter:blur(8px)}
+  .nav .inner{max-width:940px;margin:auto;display:flex;gap:14px;align-items:center;padding:10px 14px}
+  .nav a{color:inherit;text-decoration:none;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#171920}
+  .nav a:hover{background:#1c2130}
+  main{max-width:940px;margin:22px auto;padding:0 14px;display:grid;grid-template-columns:1.15fr .85fr;gap:18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px}
+  h1{margin:.3rem 0 1rem;font-size:clamp(1.2rem,2.1vw,1.7rem)}
+  label{display:block;margin-bottom:6px;color:#cfd2da;font-size:.92rem}
+  input{width:80%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#181a21;color:var(--text)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+  button{padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--brand);color:#fff;cursor:pointer}
+  .mut{color:var(--mut)}
+  .out{font-family:ui-monospace,Menlo,Consolas,monospace;background:#0f1116;border:1px solid #262a33;border-radius:12px;padding:12px}
+  .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#1b1e27;border:1px solid var(--line);color:#cfd3dc;font-size:.85rem}
+  .viz{display:flex;align-items:center;justify-content:center}
+  /* animaciones relacionadas: gráfica exponencial y marcador */
+  .pulse{animation:pulse 1.6s ease-in-out infinite}
+  @keyframes pulse{0%{r:6;opacity:.9}50%{r:10;opacity:.4}100%{r:6;opacity:.9}}
+</style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="inner">
+      <a href="index.html">⟵ Inicio</a>
+      <span class="pill">Ejercicio 1 — Carbono-14</span>
+      <a href="ejercicio2.html">Ejercicio 2</a>
+    </div>
+  </nav>
+
+  <main>
+    <section class="card">
+      <h1>Edad por decaimiento de C-14</h1>
+      <p class="mut">Modelo: \( f(t)=f(0)\,e^{kt} \). Con vida media \(T_{1/2}\), \( k=\ln(1/2)/T_{1/2} \).
+        Dada la fracción \( r=f(t)/f(0) \), la edad es \( t=\ln(r)/k \).</p>
+
+      <div class="grid">
+        <div>
+          <label>Vida media \(T_{1/2}\) (años)</label>
+          <input id="half" type="number" value="5730" step="any">
+        </div>
+        <div>
+          <label>Fracción medida \(r=f(t)/f(0)\)</label>
+          <input id="r" type="number" value="0.7745" step="any" min="0" max="1">
+        </div>
+        <div>
+          <label>Decimales</label>
+          <input id="dec" type="number" value="3" min="0" max="10">
+        </div>
+      </div>
+
+      <div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button id="btn">Calcular</button>
+        <span class="pill" id="kInfo">k = —</span>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <div id="out" class="out">Ingresa datos y pulsa <b>Calcular</b>.</div>
+      </div>
+    </section>
+
+    <!-- Visual: gráfica de decaimiento normalizado f(t)/f(0) vs t -->
+    <aside class="card viz">
+      <svg id="chart" viewBox="0 0 520 320" width="100%" height="100%" aria-label="Gráfica de decaimiento">
+        <rect x="0" y="0" width="520" height="320" fill="#0f1116" rx="12" />
+        <!-- ejes -->
+        <line x1="60" y1="260" x2="480" y2="260" stroke="#344055"/>
+        <line x1="60" y1="40"  x2="60"  y2="260" stroke="#344055"/>
+        <!-- ticks -->
+        <g fill="#9fb4d4" font-size="11">
+          <text x="30" y="265">0</text>
+          <text x="28" y="200">0.5</text>
+          <text x="28" y="140">1.0</text>
+          <text x="470" y="280">t (años)</text>
+          <text x="10" y="36">r</text>
+        </g>
+        <!-- curva -->
+        <path id="curve" d="" fill="none" stroke="#2d6cdf" stroke-width="2.2"/>
+        <!-- marcador r -->
+        <circle id="dot" cx="60" cy="140" r="6" fill="#ffd166" class="pulse"/>
+        <text id="dotLabel" x="70" y="130" fill="#ffd166" font-size="12"></text>
+      </svg>
+    </aside>
+  </main>
+
+<script>
+  const $=id=>document.getElementById(id);
+  const chart=$('chart'), curve=$('curve'), dot=$('dot'), dotLabel=$('dotLabel');
+
+  // escala simple
+  const X0=60, Y0=260, W=420, H=200;
+  function yFromR(r){ // r in [0,1] -> y pixel (1 arriba)
+    const rr=Math.max(0,Math.min(1,r));
+    return Y0 - rr*H;
+  }
+  function xFromT(t, tmax){ // 0..tmax -> X0..X0+W
+    const k = Math.max(0, Math.min(1, t/tmax));
+    return X0 + k*W;
+  }
+
+  function drawCurve(k){
+    const tmax = 4 * Math.log(2)/Math.abs(k); // ~4 vidas medias
+    let d=`M ${X0} ${yFromR(1)}`;
+    const steps=120;
+    for(let i=1;i<=steps;i++){
+      const t = (i/steps)*tmax;
+      const r = Math.exp(k*t);
+      d += ` L ${xFromT(t,tmax)} ${yFromR(r)}`;
+    }
+    curve.setAttribute('d', d);
+    return tmax;
+  }
+
+  function updateDot(k, r){
+    const t = Math.log(r)/k;
+    const tmax = drawCurve(k);
+    const cx = xFromT(Math.max(0,Math.min(t,tmax)), tmax);
+    const cy = yFromR(r);
+    dot.setAttribute('cx', cx);
+    dot.setAttribute('cy', cy);
+    dotLabel.setAttribute('x', cx+10);
+    dotLabel.setAttribute('y', cy-10);
+    dotLabel.textContent = `r = ${r.toFixed(3)}`;
+  }
+
+  function calc(){
+    const T=parseFloat($('half').value);
+    const r=parseFloat($('r').value);
+    const dec=Math.max(0,Math.min(10,parseInt($('dec').value||'3',10)));
+    if(!(T>0) || !(r>0 && r<=1)){ $('out').textContent='Revisa los datos'; return; }
+
+    const k=Math.log(0.5)/T;
+    const t=Math.log(r)/k;
+    const age=Math.round(t);
+    const f=x=>x.toFixed(dec);
+
+    $('kInfo').textContent=`k = ${f(k)} 1/año`;
+    $('out').innerHTML =
+      `Edad estimada: <b>${age}</b> años<br>`+
+      `t exacto = ${f(t)} años`;
+
+    updateDot(k, r);
+  }
+  $('btn').addEventListener('click',calc);
+
+  // inicial
+  const k0 = Math.log(0.5)/parseFloat($('half').value);
+  drawCurve(k0);
+  updateDot(k0, parseFloat($('r').value));
+</script>
+</body>
+</html>

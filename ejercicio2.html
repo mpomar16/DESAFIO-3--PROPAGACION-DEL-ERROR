@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ejercicio 2 – Enfriamiento de Newton</title>
+<link rel="icon" href="data:,">
+
+<!-- MathJax (fórmulas bonitas) -->
+<script>
+window.MathJax = { tex:{ inlineMath:[['\\(','\\)'],['$','$']] }, svg:{ fontCache:'global' } };
+</script>
+<script id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<style>
+  :root{--bg:#0b0b0c;--card:#141416;--text:#f2f2f2;--mut:#a9acb3;--line:#2a2a2e;--brand:#2d6cdf;}
+  body{margin:0;background:#0b0b0c;color:var(--text);font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif}
+  .nav{position:sticky;top:0;background:#0d0f14CC;border-bottom:1px solid var(--line);backdrop-filter:blur(8px)}
+  .nav .inner{max-width:980px;margin:auto;display:flex;gap:14px;align-items:center;padding:10px 14px}
+  .nav a{color:inherit;text-decoration:none;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#171920}
+  .nav a:hover{background:#1c2130}
+  main{max-width:980px;margin:22px auto;padding:0 14px;display:grid;grid-template-columns:1.15fr .85fr;gap:18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px}
+  h1{margin:.3rem 0 1rem;font-size:clamp(1.2rem,2.1vw,1.7rem)}
+  label{display:block;margin-bottom:6px;color:#cfd2da;font-size:.92rem}
+  input{width:80%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#181a21;color:var(--text)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+  button{padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--brand);color:#fff;cursor:pointer}
+  .mut{color:var(--mut)}
+  .out{font-family:ui-monospace,Menlo,Consolas,monospace;background:#0f1116;border:1px solid #262a33;border-radius:12px;padding:12px}
+  .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#1b1e27;border:1px solid var(--line);color:#cfd3dc;font-size:.85rem}
+  .viz{display:flex;align-items:center;justify-content:center}
+  /* animación: punto recorriendo la curva de enfriamiento */
+  .dot{animation:glow 1.8s ease-in-out infinite}
+  @keyframes glow{0%{r:5;opacity:.9}50%{r:8;opacity:.5}100%{r:5;opacity:.9}}
+</style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="inner">
+      <a href="index.html">⟵ Inicio</a>
+      <span class="pill">Ejercicio 2 — Enfriamiento de Newton</span>
+      <a href="ejercicio1.html">Ejercicio 1</a>
+    </div>
+  </nav>
+
+  <main>
+    <section class="card">
+      <h1>Hora de muerte a partir de dos lecturas</h1>
+      <p class="mut">Modelo: \(T(t)=T_s+(T_0-T_s)e^{-kt}\). Con lecturas \(T_1\) y \(T_2\) separadas \(\Delta\) horas:
+        \( k=\ln\!\big(\tfrac{T_1-T_s}{T_2-T_s}\big)/\Delta \).
+        El tiempo hasta la 1ª lectura es
+        \( t_1=\tfrac{1}{k}\ln\!\big(\tfrac{T_0-T_s}{T_1-T_s}\big) \).</p>
+
+      <div class="grid">
+        <div><label>Temperatura ambiente \(T_s\) (°F)</label><input id="Ts" type="number" value="69" step="any"></div>
+        <div><label>Temperatura normal \(T_0\) (°F)</label><input id="T0" type="number" value="98.6" step="any"></div>
+        <div><label>1ª lectura \(T_1\) (°F)</label><input id="T1" type="number" value="79.5" step="any"></div>
+        <div><label>2ª lectura \(T_2\) (°F)</label><input id="T2" type="number" value="78.0" step="any"></div>
+        <div><label>Separación \(\Delta\) (h)</label><input id="delta" type="number" value="1" step="any" min="0.1"></div>
+        <div><label>Hora de la 1ª lectura</label><input id="time1" type="time" value="21:18"></div>
+        <div><label>Decimales</label><input id="dec" type="number" value="3" min="0" max="10"></div>
+      </div>
+
+      <div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button id="btn">Calcular</button>
+        <span class="pill" id="kInfo">k = —</span>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <div id="out" class="out">Ingresa datos y pulsa <b>Calcular</b>.</div>
+      </div>
+    </section>
+
+    <!-- Visual: curva de enfriamiento, con puntos medidos y marcador animado -->
+    <aside class="card viz">
+      <svg id="chart" viewBox="0 0 520 320" width="100%" height="100%" aria-label="Curva de enfriamiento">
+        <rect x="0" y="0" width="520" height="320" fill="#0f1116" rx="12" />
+        <!-- ejes -->
+        <line x1="60" y1="260" x2="480" y2="260" stroke="#344055"/>
+        <line x1="60" y1="40"  x2="60"  y2="260" stroke="#344055"/>
+        <g fill="#9fb4d4" font-size="11">
+          <text x="470" y="280">t (h)</text>
+          <text x="10" y="36">T (°F)</text>
+        </g>
+        <path id="curve" d="" fill="none" stroke="#2d6cdf" stroke-width="2.2"/>
+        <circle id="p1" r="5" fill="#ffd166"/>
+        <circle id="p2" r="5" fill="#ff9f1c"/>
+        <circle id="runner" r="5" fill="#ff6b6b" class="dot"/>
+        <text id="lbl1" x="0" y="0" fill="#ffd166" font-size="12"></text>
+        <text id="lbl2" x="0" y="0" fill="#ff9f1c" font-size="12"></text>
+      </svg>
+    </aside>
+  </main>
+
+<script>
+  const $=id=>document.getElementById(id);
+  const chart=$('chart'), curve=$('curve'),
+        p1=$('p1'), p2=$('p2'), runner=$('runner'),
+        lbl1=$('lbl1'), lbl2=$('lbl2');
+
+  const X0=60, Y0=260, W=420, H=200;   // área de ploteo
+  // mapea temperatura a píxeles (y). Usamos rango visual 60..100°F
+  function yFromT(T){
+    const min=60, max=100;
+    const k=(T-min)/(max-min);
+    const kk=Math.max(0,Math.min(1,k));
+    return Y0 - kk*H;
+  }
+  function xFromTime(t, tmax){
+    const k=Math.max(0,Math.min(1,t/tmax));
+    return X0 + k*W;
+  }
+
+  function timeMinusHours(hhmm, hours){
+    const [H,M]=hhmm.split(':').map(n=>parseInt(n,10));
+    const base=new Date(2000,0,1,H,M,0);
+    const ms=base.getTime()-hours*3600*1000;
+    const d=new Date(ms);
+    const hh=String(d.getHours()).padStart(2,'0');
+    const mm=String(d.getMinutes()).padStart(2,'0');
+    const ss=String(d.getSeconds()).padStart(2,'0');
+    return `${hh}:${mm}:${ss}`;
+  }
+
+  function drawCurve(Ts,T0,k,tmax){
+    let d=`M ${X0} ${yFromT(T0)}`;
+    const steps=150;
+    for(let i=1;i<=steps;i++){
+      const t=(i/steps)*tmax;
+      const T=Ts+(T0-Ts)*Math.exp(-k*t);
+      d += ` L ${xFromTime(t,tmax)} ${yFromT(T)}`;
+    }
+    curve.setAttribute('d', d);
+  }
+
+  function calc(){
+    const Ts=parseFloat($('Ts').value),
+          T0=parseFloat($('T0').value),
+          T1=parseFloat($('T1').value),
+          T2=parseFloat($('T2').value),
+          delta=parseFloat($('delta').value),
+          time1=$('time1').value||'21:18',
+          dec=Math.max(0,Math.min(10,parseInt($('dec').value||'3',10)));
+
+    if(!(delta>0) || !(T1>Ts) || !(T2>Ts) || !(T0>Ts)){
+      $('out').textContent='Verifica que T0>T1>T2>Ts y Δ>0.'; return;
+    }
+
+    const k = Math.log((T1-Ts)/(T2-Ts))/delta;     // 1/h
+    const t1 = (1/k) * Math.log((T0-Ts)/(T1-Ts));  // h
+    const death = timeMinusHours(time1, t1);
+
+    const f=x=>x.toFixed(dec);
+    $('kInfo').textContent=`k = ${f(k)} 1/h`;
+    $('out').innerHTML =
+      `Tiempo hasta 1ª lectura: <b>${f(t1)}</b> h<br>`+
+      `Hora de muerte aprox.: <b>${death}</b> (si la 1ª lectura fue a ${time1})`;
+
+    // curva y puntos
+    const tmax = Math.max(t1+delta, 6); // ventana razonable
+    drawCurve(Ts,T0,k,tmax);
+
+    // p1 en t1
+    const x1 = xFromTime(t1, tmax), y1 = yFromT(T1);
+    p1.setAttribute('cx', x1); p1.setAttribute('cy', y1);
+    lbl1.setAttribute('x', x1+10); lbl1.setAttribute('y', y1-10);
+    lbl1.textContent = `T1=${T1.toFixed(1)}°F`;
+
+    // p2 en t1+delta
+    const x2 = xFromTime(t1+delta, tmax), y2 = yFromT(T2);
+    p2.setAttribute('cx', x2); p2.setAttribute('cy', y2);
+    lbl2.setAttribute('x', x2+10); lbl2.setAttribute('y', y2-10);
+    lbl2.textContent = `T2=${T2.toFixed(1)}°F`;
+
+    // “runner”: pequeño punto animado al instante t1
+    runner.setAttribute('cx', x1);
+    runner.setAttribute('cy', y1);
+  }
+  $('btn').addEventListener('click',calc);
+
+  // inicial
+  calc();
+</script>
+</body>
+</html>
